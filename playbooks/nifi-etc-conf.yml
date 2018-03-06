@@ -1,0 +1,29 @@
+
+---
+- hosts: nifi-cluster
+  vars:
+    nifi-user: nifi
+
+  tasks:
+    - name: update limits.conf
+      pam_limits:
+        backup: yes
+        domain: {{ nifi-user }}
+        limit_type: "{{ item.limittype }}"
+        limit_item: "{{ item.limititem }}"
+        value: "{{ item.limitvalue }}"
+      with_items:
+        - { limittype: 'hard', limititem: 'nofile', limitvalue: '50000' }
+        - { limittype: 'soft', limititem: 'nofile', limitvalue: '50000' }
+        - { limittype: 'hard', limititem: 'nproc', limitvalue: '10000' }
+        - { limittype: 'soft', limititem: 'nproc', limitvalue: '10000' }
+
+    - name: update sysctl
+      sysctl:
+        reload: yes
+        name: "{{ item.itemname }}"
+        value: "{{ item.itemvalue }}"
+      with_items:
+        - { itemname: 'vm.swappiness', itemvalue: 0 }
+        - { itemname: 'net.ipv4.ip_local_port_range', itemvalue: '10000 65000' }
+        - { itemname: 'net.ipv4.netfilter.ip_conntrack_tcp_timeout_time_wait', itemvalue: 1 }
